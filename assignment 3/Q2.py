@@ -1,44 +1,52 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
-import seaborn as sns
 
-# Load the dataset
 data = pd.read_csv('/Users/weichen/Desktop/CALIFORNIA-housing.csv')
 
 # Selecting longitude and latitude columns
-X = data[['longitude', 'latitude']]
+coordinates = data[['longitude', 'latitude']]
 
-# Standardize the data
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+# # Standardize the data
+# scaler = StandardScaler()
+# coordinates_scaled = scaler.fit_transform(coordinates)
 
-# DBSCAN clustering
-eps = 0.2
-min_samples = 50
-dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-data['cluster'] = dbscan.fit_predict(X_scaled)
+# # Set a random seed for reproducibility
+# np.random.seed(42)
+
+# Perform DBSCAN clustering
+dbscan = DBSCAN(eps=0.2, min_samples=50)
+data['cluster_label'] = dbscan.fit_predict(coordinates)
 
 # Scatter plot
 plt.figure(figsize=(10, 6))
-sns.scatterplot(data=data, x='longitude', y='latitude', hue='cluster', palette='viridis')
+plt.scatter(data['longitude'], data['latitude'], c=data['cluster_label'], cmap='viridis', s=20)
 plt.title('DBSCAN Clustering of California Housing Data')
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
-plt.legend(title='Cluster')
+plt.colorbar(label='Cluster')
+plt.grid(True)
 plt.show()
 
-# Boxplot comparison across clusters
-numerical_columns = ['median_house_value', 'housing_median_age', 'total_rooms', 'total_bedrooms', 'population', 'households', 'median_income']
+# Define numerical variables
+numerical_vars = ['housing_median_age', 'total_rooms', 'total_bedrooms', 'population', 'households', 'median_income', 'median_house_value']
 
-plt.figure(figsize=(14, 8))
-for i, column in enumerate(numerical_columns, 1):
-    plt.subplot(3, 3, i)
-    sns.boxplot(data=data, x='cluster', y=column, palette='viridis')
-    plt.title(f'{column} across Clusters')
-    plt.xlabel('Cluster')
-    plt.ylabel(column)
+# Plot boxplots for each variable across clusters
+plt.figure(figsize=(15, 10))
+# Create subplots
+num_rows = 3
+num_cols = 3
+fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 10))
+
+for i, var in enumerate(numerical_vars):
+    row = i // num_cols
+    col = i % num_cols
+    data.boxplot(column=var, by='cluster_label', grid=False, ax=axes[row, col])
+    axes[row, col].set_title(f'{var} across clusters')
+    axes[row, col].set_xlabel('Cluster')
+    axes[row, col].set_ylabel(var)
+
+# Adjust layout
 plt.tight_layout()
-plt.show()
-
